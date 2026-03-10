@@ -1,0 +1,112 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>COSMOS-X SPACE LIVE</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+body{margin:0;background:#010409;color:#00f3ff;font-family:Courier New,monospace;overflow:hidden}
+#globe{position:absolute;width:100%;height:100%}
+#ui{position:absolute;top:0;left:0;width:100%;padding:10px;display:grid;
+grid-template-columns:300px 1fr 300px;gap:10px}
+.panel{background:#0d1117;border:1px solid #30363d;padding:10px}
+</style>
+</head>
+<body>
+
+<div id="globe"></div>
+
+<div id="ui">
+<div class="panel">
+<h3>ISS Location</h3>
+<div id="iss">Loading...</div>
+
+<h3>Satellite Telemetry</h3>
+<div id="sat">Loading...</div>
+</div>
+
+<div></div>
+
+<div class="panel">
+<h3>Asteroids</h3>
+<div id="neo">Loading...</div>
+
+<h3>Latest Launch</h3>
+<div id="launch">Loading...</div>
+
+<h3>Space Weather</h3>
+<div id="weather">Loading...</div>
+</div>
+</div>
+
+<script>
+const scene=new THREE.Scene()
+const camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,1000)
+const renderer=new THREE.WebGLRenderer({antialias:true})
+renderer.setSize(window.innerWidth,window.innerHeight)
+document.getElementById("globe").appendChild(renderer.domElement)
+
+const earthGeo=new THREE.SphereGeometry(5,64,64)
+const earthMat=new THREE.MeshPhongMaterial({
+map:new THREE.TextureLoader().load("https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg")
+})
+
+const earth=new THREE.Mesh(earthGeo,earthMat)
+scene.add(earth)
+
+scene.add(new THREE.PointLight(0xffffff,1.2))
+scene.add(new THREE.AmbientLight(0x333333))
+
+camera.position.z=12
+
+function animate(){
+requestAnimationFrame(animate)
+earth.rotation.y+=0.001
+renderer.render(scene,camera)
+}
+animate()
+
+async function loadISS(){
+const r=await fetch("/api/iss")
+const d=await r.json()
+document.getElementById("iss").innerHTML=
+"Lat: "+d.latitude+"<br>Lng: "+d.longitude
+}
+
+async function loadSat(){
+const r=await fetch("/api/satellite")
+const d=await r.json()
+document.getElementById("sat").innerHTML=
+"Lat: "+d.lat+"<br>Lng: "+d.lng+"<br>Alt: "+d.alt+" km"
+}
+
+async function loadNeo(){
+const r=await fetch("/api/asteroids")
+const d=await r.json()
+document.getElementById("neo").innerHTML=
+d.name+"<br>Hazardous: "+d.hazard
+}
+
+async function loadLaunch(){
+const r=await fetch("/api/launch")
+const d=await r.json()
+document.getElementById("launch").innerHTML=
+d.name+"<br>"+d.date
+}
+
+async function loadWeather(){
+const r=await fetch("/api/space-weather")
+const d=await r.json()
+document.getElementById("weather").innerHTML=
+"K-index: "+d.kp
+}
+
+setInterval(loadISS,5000)
+setInterval(loadSat,5000)
+loadNeo()
+loadLaunch()
+loadWeather()
+</script>
+</body>
+</html>
